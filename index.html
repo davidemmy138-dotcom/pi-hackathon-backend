@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pay with Pi</title>
+  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+    button { padding: 15px 30px; font-size: 18px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>🎉 Pi Hackathon 2025</h1>
+  <p>Click below to pay 1 Pi to the app</p>
+
+  <!-- Pay Button -->
+  <button id="payButton" onclick="payPi()">Pay 1 Pi</button>
+
+  <script>
+    // Initialize Pi SDK
+    const Pi = window.Pi;
+    if (Pi) {
+      Pi.init({ version: "2.0", sandbox: true }); // Use sandbox for testing
+    }
+
+    // Scopes needed
+    const scopes = ['payments'];
+
+    // Check if user is authenticated
+    async function payPi() {
+      try {
+        const paymentData = {
+          amount: 1,
+          memo: "Hackathon Step 11 - Test Payment",
+          metadata: { step: 11, user: "testuser" }
+        };
+
+        const callbacks = {
+          onReadyForServerApproval: async (paymentId) => {
+            console.log("🔵 Ready for server approval:", paymentId);
+            const response = await fetch("https://your-render-url.onrender.com/api/approve-payment", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "Authorization": "mysecretpaytoken123" },
+              body: JSON.stringify({ paymentId })
+            });
+            if (!response.ok) throw new Error("Failed to approve");
+          },
+          onReadyForServerCompletion: async (paymentId, txid) => {
+            console.log("🟢 Payment completed on blockchain:", paymentId, txid);
+            const response = await fetch("https://your-render-url.onrender.com/api/complete-payment", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "Authorization": "mysecretpaytoken123" },
+              body: JSON.stringify({ paymentId, txid })
+            });
+            if (!response.ok) throw new Error("Failed to complete");
+            alert("✅ Payment successful! Step 11 should now be complete!");
+          },
+          onCancel: (paymentId) => {
+            console.log("❌ Payment cancelled:", paymentId);
+            alert("Payment cancelled");
+          },
+          onError: (error, payment) => {
+            console.error("🔴 Error:", error);
+            alert("Error: " + error.code);
+          }
+        };
+
+        // Open Pi payment dialog
+        await Pi.createPayment(paymentData, callbacks);
+      } catch (err) {
+        console.error("🚨 Error:", err);
+        alert("Error: " + err.message);
+      }
+    }
+  </script>
+</body>
+</html>
